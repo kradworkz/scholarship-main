@@ -1,0 +1,68 @@
+version: '3'
+services:
+
+  #PHP Service
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    image: lavan-php7.3
+    container_name: lavan-app
+    restart: unless-stopped
+    tty: true
+    environment:
+      SERVICE_NAME: app
+      SERVICE_TAGS: dev
+    working_dir: /var/www
+    volumes:
+       - ./:/var/www
+       - ./dockerize/php/local.ini:/usr/local/etc/php/conf.d/local.ini
+    ports: 
+      - "9001:9000"
+    networks:
+      - dostnetwork
+      - lavan-app-network
+
+  #Nginx Service
+  webserver:
+    image: nginx:alpine
+    container_name: lavan-webserver
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "80:80"
+    volumes:
+      - ./:/var/www
+      - ./dockerize/nginx/conf.d/:/etc/nginx/conf.d/
+    networks:
+      - lavan-app-network
+
+  db:
+    image: mysql:5.7.22
+    container_name: lavan-db
+    restart: unless-stopped
+    tty: true
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_DATABASE: laravel
+      MYSQL_ROOT_PASSWORD: your_mysql_root_password
+      SERVICE_TAGS: dev
+      SERVICE_NAME: mysql
+    volumes:
+      - dbdata:/var/lib/mysql/
+      - ./dockerize/mysql/my.cnf:/etc/mysql/my.cnf
+    networks:
+      - lavan-app-network
+
+
+#Docker Networks
+networks:
+  dostnetwork:
+    external: true
+  lavan-app-network:
+    driver: bridge
+volumes:
+  dbdata:
+    driver: local
+
